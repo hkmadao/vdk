@@ -3,7 +3,6 @@ package h264parser
 import (
 	"bytes"
 	"fmt"
-	"math"
 
 	"time"
 
@@ -621,31 +620,31 @@ func ParseSPS(data []byte) (s SPSInfo, err error) {
 			_ = chroma_sample_loc_type_bottom_field
 		}
 
-		timing_info_present_flag, err := r.ReadBit()
-		if err != nil {
-			return s, err
-		}
+		// timing_info_present_flag, err := r.ReadBit()
+		// if err != nil {
+		// 	return s, err
+		// }
 
-		if timing_info_present_flag != 0 {
-			num_units_in_tick, err := r.ReadBits(32)
-			if err != nil {
-				return s, err
-			}
-			time_scale, err := r.ReadBits(32)
-			if err != nil {
-				return s, err
-			}
-			s.FPS = uint(math.Floor(float64(time_scale) / float64(num_units_in_tick) / 2.0))
-			fixed_frame_rate_flag, err := r.ReadBit()
-			if err != nil {
-				return s, err
-			}
-			if fixed_frame_rate_flag != 0 {
-				//utils.L.InfoLn("fixed_frame_rate_flag", fixed_frame_rate_flag)
-				//have been devide 2
-				//self.FPS = self.FPS / 2
-			}
-		}
+		// if timing_info_present_flag != 0 {
+		// 	num_units_in_tick, err := r.ReadBits(32)
+		// 	if err != nil {
+		// 		return s, err
+		// 	}
+		// 	time_scale, err := r.ReadBits(32)
+		// 	if err != nil {
+		// 		return s, err
+		// 	}
+		// 	s.FPS = uint(math.Floor(float64(time_scale) / float64(num_units_in_tick) / 2.0))
+		// 	fixed_frame_rate_flag, err := r.ReadBit()
+		// 	if err != nil {
+		// 		return s, err
+		// 	}
+		// 	if fixed_frame_rate_flag != 0 {
+		// 		//utils.L.InfoLn("fixed_frame_rate_flag", fixed_frame_rate_flag)
+		// 		//have been devide 2
+		// 		//self.FPS = self.FPS / 2
+		// 	}
+		// }
 	}
 	return
 }
