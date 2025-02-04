@@ -32,6 +32,15 @@ type ProxyConnOption struct {
 	encryptKey  []byte
 }
 
+func NewProxyConnOption(encryptType int, clientCode string, signSecret string, encryptKey []byte) *ProxyConnOption {
+	return &ProxyConnOption{
+		encryptType: encryptType,
+		clientCode:  clientCode,
+		signSecret:  signSecret,
+		encryptKey:  encryptKey,
+	}
+}
+
 type ProxyConn struct {
 	conn    net.Conn
 	readbuf []byte
@@ -79,7 +88,7 @@ func newClientProxyConn(conn net.Conn, proxyConnOption ProxyConnOption) (proxyCo
 	return nil, fmt.Errorf("unsupport encryptType: %d", proxyConnOption.encryptType)
 }
 
-func newServerProxyConn(conn net.Conn, encryptType int, getClientCode func(clientCode string) ClientInfo) (proxyConn *ProxyConn, err error) {
+func newServerProxyConn(conn net.Conn, encryptType int, getClientCode func(clientCode string) (*ClientInfo, error)) (proxyConn *ProxyConn, err error) {
 	if encryptType == UnEncrypt {
 		proxyConn = &ProxyConn{
 			conn: conn,
@@ -131,7 +140,11 @@ func newServerProxyConn(conn net.Conn, encryptType int, getClientCode func(clien
 			return
 		}
 
-		clientInfo := getClientCode(registerInfo.ClientCode)
+		var clientInfo *ClientInfo
+		if clientInfo, err = getClientCode(registerInfo.ClientCode); err != nil {
+			err = fmt.Errorf("getClientCode error: %v", err)
+			return
+		}
 
 		planText := fmt.Sprintf("clientCode=%s&dateStr=%s&signSecret=%s", registerInfo.ClientCode, registerInfo.DateStr, clientInfo.SignSecret)
 		signStr := Md5(planText)

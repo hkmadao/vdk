@@ -68,11 +68,11 @@ type Server struct {
 	HandlePublish func(*Conn)
 	HandlePlay    func(*Conn)
 	HandleConn    func(*Conn)
-	getClientCode func(clientCode string) ClientInfo
+	getClientCode func(clientCode string) (*ClientInfo, error)
 	encryptType   int
 }
 
-func (self *Server) SetEncryptInfo(encryptType int, getClientCode func(clientCode string) ClientInfo) {
+func (self *Server) SetEncryptInfo(encryptType int, getClientCode func(clientCode string) (*ClientInfo, error)) {
 	self.encryptType = encryptType
 	self.getClientCode = getClientCode
 }
