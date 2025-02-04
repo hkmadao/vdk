@@ -34,14 +34,14 @@ func ParseURL(uri string) (u *url.URL, err error) {
 }
 
 func Dial(uri string) (conn *Conn, err error) {
-	return DialTimeout(uri, 0, nil)
+	return DialTimeout(uri, 0, NewUnEncryptProxyConnOption())
 }
 
-func DialEncrypt(uri string, proxyConnOption *ProxyConnOption) (conn *Conn, err error) {
+func DialEncrypt(uri string, proxyConnOption ProxyConnOption) (conn *Conn, err error) {
 	return DialTimeout(uri, 0, proxyConnOption)
 }
 
-func DialTimeout(uri string, timeout time.Duration, proxyConnOption *ProxyConnOption) (conn *Conn, err error) {
+func DialTimeout(uri string, timeout time.Duration, proxyConnOption ProxyConnOption) (conn *Conn, err error) {
 	var u *url.URL
 	if u, err = ParseURL(uri); err != nil {
 		return
@@ -53,10 +53,7 @@ func DialTimeout(uri string, timeout time.Duration, proxyConnOption *ProxyConnOp
 		return
 	}
 
-	var proxyConn *ProxyConn
-	if proxyConn, err = newClientProxyConn(netconn, *proxyConnOption); err != nil {
-		return
-	}
+	proxyConn := newClientProxyConn(netconn, proxyConnOption)
 
 	conn = NewConn(proxyConn)
 	conn.URL = u
@@ -64,17 +61,19 @@ func DialTimeout(uri string, timeout time.Duration, proxyConnOption *ProxyConnOp
 }
 
 type Server struct {
-	Addr          string
-	HandlePublish func(*Conn)
-	HandlePlay    func(*Conn)
-	HandleConn    func(*Conn)
-	getClientCode func(clientCode string) (*ClientInfo, error)
-	encryptType   int
+	Addr           string
+	HandlePublish  func(*Conn)
+	HandlePlay     func(*Conn)
+	HandleConn     func(*Conn)
+	getClientCode  func(clientCode string) (*ClientInfo, error)
+	encryptType    int
+	hasEncryptType bool
 }
 
 func (self *Server) SetEncryptInfo(encryptType int, getClientCode func(clientCode string) (*ClientInfo, error)) {
 	self.encryptType = encryptType
 	self.getClientCode = getClientCode
+	self.hasEncryptType = true
 }
 
 func (self *Server) handleConn(conn *Conn) (err error) {
@@ -99,6 +98,9 @@ func (self *Server) handleConn(conn *Conn) (err error) {
 }
 
 func (self *Server) ListenAndServe() (err error) {
+	if !self.hasEncryptType {
+		self.encryptType = UnEncrypt
+	}
 	addr := self.Addr
 	if addr == "" {
 		addr = ":1935"
@@ -128,10 +130,7 @@ func (self *Server) ListenAndServe() (err error) {
 			fmt.Println("rtmp: server: accepted")
 		}
 
-		var proxyConn *ProxyConn
-		if proxyConn, err = newServerProxyConn(netconn, AES, self.getClientCode); err != nil {
-			return
-		}
+		proxyConn := newServerProxyConn(netconn, self.encryptType, self.getClientCode)
 
 		conn := NewConn(proxyConn)
 		conn.isserver = true
